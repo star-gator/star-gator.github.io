@@ -26,7 +26,7 @@ function App() {
       <Link style={{color: "white", textDecoration: currentRoute == dest ? "" : "none" }}
         onClick={() => {
           setRoute(dest);
-          window.location.reload();
+         // window.location.reload();
         }}
         to={dest}
       >
@@ -42,6 +42,7 @@ function App() {
       {link(route, "/", "Home")}
       {link(route, "/avax", "AVAX")}
       {link(route, "/ftm", "FTM")}
+      {link(route, "/polygon", "Matic")}
     </div>
     )
   }
@@ -73,6 +74,9 @@ function App() {
             </Route>
             <Route exact path="/avax">
               <Strategies networkId={"0xa86a"} strategies={[ {strategyAddress: "0x9350Fe568EF2E7d7e3dbBB3EA76Af95397385c1a"},{strategyAddress: "0xF4e46e88620384397D7a45cacC2203221a1c22E9"}]}/>
+            </Route>
+            <Route exact path="/polygon">
+              <Strategies networkId={"0x89"} strategies={[ {strategyAddress: "0xe956615a08e5b19dd16364f5cc0d04446281baff"}, {strategyAddress: "0x45ce422893265a437c6632323d69b2a4f551e976"}]}/>
             </Route>
           </Switch>
         </HashRouter>

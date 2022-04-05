@@ -38,6 +38,8 @@ const StrategyInterface = (props) => {
     const [toWithdraw, setToWithdraw] = useState("");
     const [toDeposit, setToDeposit] = useState("");
 
+    const [loadingMsg, setLoadingMsg] = useState("");
+
     const [OwnersAddr1, setOwnersAddr1] = useState([]);
     const [OwnersAddr2, setOwnersAddr2] = useState([]);
     const [TxId, setTxId] = useState(0);
@@ -49,9 +51,11 @@ const StrategyInterface = (props) => {
     async function getData() {
 
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        
         if (chainId != networkId) {
             console.log(`chain ${chainId} want ${networkId}`)
-            alert("wrong network");
+          //  alert("wrong network");
+            
         } else {
             setRightNetwork(true);
             const { ethereum } = window;
@@ -59,6 +63,7 @@ const StrategyInterface = (props) => {
 
             const accounts = await ethereum.request({ method: 'eth_accounts' });
             console.log(accounts[0])
+            console.log(strategyAddress)
             const strategyContract = new ethers.Contract(strategyAddress, strategyAbi.abi, provider);
             const curReward = await strategyContract.checkReward();
             const name = await strategyContract.name();
