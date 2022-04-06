@@ -33,6 +33,7 @@ const StrategyInterface = (props) => {
     const [shareDecimals, setShareDecimals] = useState(8);
     const [shareSymbol, setShareSymbol] = useState("");
     const [strategyName, setStrategyName] = useState("");
+    const [tvl, setTvl] = useState();
 
 
     const [toWithdraw, setToWithdraw] = useState("");
@@ -51,11 +52,11 @@ const StrategyInterface = (props) => {
     async function getData() {
 
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        
+
         if (chainId != networkId) {
             console.log(`chain ${chainId} want ${networkId}`)
-          //  alert("wrong network");
-            
+            //  alert("wrong network");
+
         } else {
             setRightNetwork(true);
             const { ethereum } = window;
@@ -73,6 +74,7 @@ const StrategyInterface = (props) => {
             const shareDec = await strategyContract.decimals();
             const shareTs = await strategyContract.totalSupply();
             const shareBal = await strategyContract.balanceOf(accounts[0]);
+            const tvl = await strategyContract.getDepositTokensForShares(shareTs);
             const shareApprove = await strategyContract.allowance(accounts[0], strategyAddress);
             const rewardTokenContract = new ethers.Contract(rewToken, erc20Abi.abi, provider);
             const rewSymbol = await rewardTokenContract.symbol();
@@ -98,6 +100,7 @@ const StrategyInterface = (props) => {
             setShareTotalSupply(shareTs);
             setRewardTokenSymbol(rewSymbol);
             setStrategyName(name);
+            setTvl(tvl);
         }
     }
 
@@ -168,7 +171,9 @@ const StrategyInterface = (props) => {
                 const provider = new ethers.providers.Web3Provider(ethereum);
                 const signer = provider.getSigner();
                 const con = new ethers.Contract(strategyAddress, strategyAbi.abi, signer);
-                const exeTx = await con.deposit(prepForDeposit(toDeposit, depositTokenDecimals));
+                const amountToDeposit = prepForDeposit(toDeposit, depositTokenDecimals);
+                console.log(`depositing ${amountToDeposit}`)
+                const exeTx = await con.deposit(amountToDeposit);
                 alert("Your transaction has been sent");
                 await exeTx.wait();
                 alert("Your Deposit has completed");
@@ -221,87 +226,111 @@ const StrategyInterface = (props) => {
     }
 
     const formatDepositBalance = (balance, decimals) => {
-        return balance / (Math.pow(10, decimals));
+        if (decimals == 18) {
+            return formatEther(`${balance}`);
+        } else {
+            return balance / (Math.pow(10, decimals));
+        }
     }
     const prepForDeposit = (amount, decimals) => {
-        return amount * (Math.pow(10, decimals));
+        if (decimals == 18) {
+            console.log("18")
+            return parseEther(`${amount}`);
+        } else {
+            return BigNumber.from(amount).mul(BigNumber.from(10).pow(decimals));
+        }
+
+    }
+
+    const showTVL = () => {
+        return (
+            tvl ?
+                <div>
+                    <h4>TVL ${depositTokenDecimals == 18 ? parseEther(tvl): formatDepositBalance(tvl.toString(), depositTokenDecimals)}</h4>
+                </div>
+                :
+                <></>
+            );
     }
 
 
 
     return rightNetwork ? (
         rewardTokenSymbol != "" ?
-        (
+            (
 
-        <div style={{border: "1px solid grey"}}>
-        <div>
-            <h3 style={{color: "grey"}}>{strategyAddress}</h3>
-        </div>
-        <div>
-            <h1>{strategyName}</h1>
-        </div>
-            <div>
-                <h2>Current Reward</h2>
-                <p>{formatEther(currentReward)} {rewardTokenSymbol}</p>
-                <br />
-                <p>{"Share Balance:" + formatEther(shareBalance)}</p>
-            </div>
-            <div>
-                <h2>Deposit:</h2>
-                <p onClick={() => {
-                    setToDeposit(formatDepositBalance(depositTokenBalance, depositTokenDecimals))
-                }} style={{ color: "grey", opacity: "95%", cursor: "pointer" }}>Max: {formatDepositBalance(depositTokenBalance, depositTokenDecimals)} {depositTokenSymbol}</p>
+                <div style={{ border: "1px solid grey" }}>
+                    <div>
+                        <h3 style={{ color: "grey" }}>{strategyAddress}</h3>
+                    </div>
+                    <div>
+                        <h1>{strategyName}</h1>
+                    </div>
 
-                <input onChange={e => setToDeposit(e.target.value)} type="text"
-                    name="toDeposit"
-                    placeholder={`Amount of ${depositTokenSymbol} to deposit`}
-                    value={toDeposit} />
-                {
-                    BigNumber.from(prepForDeposit(toDeposit, depositTokenDecimals)).lte(BigNumber.from(depositTokenApproved)) ?
+                    {showTVL()}
+
+                    <div>
+                        <h2>Current Reward</h2>
+                        <p>{formatEther(currentReward)} {rewardTokenSymbol}</p>
+                        <br />
+                        <p>{"Share Balance:" + formatEther(shareBalance)}</p>
+                    </div>
+                    <div>
+                        <h2>Deposit:</h2>
+                        <p onClick={() => {
+                            setToDeposit(formatDepositBalance(depositTokenBalance, depositTokenDecimals))
+                        }} style={{ color: "grey", opacity: "95%", cursor: "pointer" }}>Max: {formatDepositBalance(depositTokenBalance, depositTokenDecimals)} {depositTokenSymbol}</p>
+
+                        <input onChange={e => setToDeposit(e.target.value)} type="text"
+                            name="toDeposit"
+                            placeholder={`Amount of ${depositTokenSymbol} to deposit`}
+                            value={toDeposit} />
+                        {
+                            BigNumber.from(depositTokenBalance).lte(BigNumber.from(depositTokenApproved)) ?
+                                <StyledButton onClick={() => {
+                                    handleDeposit();
+                                }} style={{ marginLeft: 10 }}> Deposit</StyledButton>
+                                :
+                                <StyledButton onClick={() => {
+                                    handleApproval(depositToken, depositTokenTotalSupply);
+                                }} style={{ marginLeft: 10 }}> Approve</StyledButton>
+                        }
+                    </div>
+                    <div>
+                        <h2>Withdraw:</h2>
+                        <p onClick={() => {
+                            setToWithdraw(formatDepositBalance(shareBalance, shareDecimals))
+                        }} style={{ color: "grey", opacity: "95%", cursor: "pointer" }}>Max: {formatDepositBalance(shareBalance, shareDecimals)} {shareSymbol}</p>
+
+                        <input onChange={e => setToWithdraw(e.target.value)} type="text"
+                            name="toWithdraw"
+                            placeholder={`Amount of ${shareSymbol} to withdraw`}
+                            value={toWithdraw} />
+                        {
+                            BigNumber.from(shareBalance).lte(BigNumber.from(shareApproved)) ?
+                                <StyledButton onClick={() => {
+                                    handleWithdraw();
+                                }} style={{ marginLeft: 10 }}> Withdraw</StyledButton>
+                                :
+                                <StyledButton onClick={() => {
+                                    handleApproval(strategyAddress, shareTotalSupply);
+                                }} style={{ marginLeft: 10 }}> Approve</StyledButton>
+                        }
+
+                    </div>
+
+                    <div>
+                        <h2>Reinvest</h2>
+                        <p>Earn {formatEther(currentReward)} {rewardTokenSymbol} compounding this pool</p>
                         <StyledButton onClick={() => {
-                            handleDeposit();
-                        }} style={{ marginLeft: 10 }}> Deposit</StyledButton>
-                        :
-                        <StyledButton onClick={() => {
-                            handleApproval(depositToken, depositTokenTotalSupply);
-                        }} style={{ marginLeft: 10 }}> Approve</StyledButton>
-                }
-            </div>
-            <div>
-                <h2>Withdraw:</h2>
-                <p onClick={() => {
-                    setToWithdraw( formatDepositBalance(shareBalance, shareDecimals))
-                }} style={{ color: "grey", opacity: "95%", cursor: "pointer" }}>Max: {formatDepositBalance(shareBalance, shareDecimals)} {shareSymbol}</p>
-
-                <input onChange={e => setToWithdraw(e.target.value)} type="text"
-                    name="toWithdraw"
-                    placeholder={`Amount of ${shareSymbol} to withdraw`}
-                    value={toWithdraw} />
-                {
-                    BigNumber.from(shareBalance).lte(BigNumber.from(shareApproved)) ?
-                        <StyledButton onClick={() => {
-                            handleWithdraw();
-                        }} style={{ marginLeft: 10 }}> Withdraw</StyledButton>
-                        :
-                        <StyledButton onClick={() => {
-                            handleApproval(strategyAddress, shareTotalSupply);
-                        }} style={{ marginLeft: 10 }}> Approve</StyledButton>
-                }
-
-            </div>
-
-            <div>
-                <h2>Reinvest</h2>
-                <p>Earn {formatEther(currentReward)} {rewardTokenSymbol} compounding this pool</p>
-                <StyledButton onClick={() => {
-                    handleReinvest();
-                }}>
-                    Compound
-                </StyledButton>
-            </div>
-        </div>
-    ): <div> Loading... </div>) : (
-        <div style={{  display: "flex", flexDirection: "column", alignContent: "center", alignItems: "center" }}>
+                            handleReinvest();
+                        }}>
+                            Compound
+                        </StyledButton>
+                    </div>
+                </div>
+            ) : <div> Loading... </div>) : (
+        <div style={{ display: "flex", flexDirection: "column", alignContent: "center", alignItems: "center" }}>
             Please Switch to the correct Network:<br />
             <StyledButton onClick={async () => {
                 if (networkId == "0x1") {

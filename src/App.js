@@ -14,6 +14,7 @@ function App() {
 
 
   const [route, setRoute] = useState();
+  const [rerouting, setRerouting] = useState(false);
   useEffect(() => {
     console.log(`set path ${window.location.toString().split("/#")[1]}`)
     setRoute(window.location.toString().split("/#")[1]);
@@ -25,7 +26,11 @@ function App() {
       <StyledLink>
       <Link style={{color: "white", textDecoration: currentRoute == dest ? "" : "none" }}
         onClick={() => {
-          setRoute(dest);
+          setRerouting(true);
+          setTimeout(() => {
+            setRoute(dest);
+            setRerouting(false);
+          }, 1000)
          // window.location.reload();
         }}
         to={dest}
@@ -43,6 +48,7 @@ function App() {
       {link(route, "/avax", "AVAX")}
       {link(route, "/ftm", "FTM")}
       {link(route, "/polygon", "Matic")}
+    {/*   {link(route, "/bsc", "BSC")} */}
     </div>
     )
   }
@@ -60,8 +66,13 @@ function App() {
 
         <HashRouter>
          {nav()}
-          <Switch>
-            <Route exact path="/">
+            {
+              rerouting ?
+              <>Loading</>
+              :
+
+          <Switch> 
+              <Route exact path="/">
               <div style={{padding: "5%"}}>
                 <h1 style={{textAlign: "center"}}>Welcome!</h1>
                 <p>Thank you for visiting StarGator. These yield aggregators have been built to let us farm STG pools and lower our exposure risks.</p>
@@ -77,8 +88,14 @@ function App() {
             </Route>
             <Route exact path="/polygon">
               <Strategies networkId={"0x89"} strategies={[ {strategyAddress: "0xe956615a08e5b19dd16364f5cc0d04446281baff"}, {strategyAddress: "0x45ce422893265a437c6632323d69b2a4f551e976"}]}/>
+            </Route> 
+             <Route exact path="/bsc">
+              <Strategies networkId={"0x38"} strategies={[ {strategyAddress: "0xB41e4731b8E7c67D3a50905f5BBf693863441AE5"}]}/>
             </Route>
+
           </Switch>
+            }
+       
         </HashRouter>
 
         {/*  <button onClick={async () => {
