@@ -76,7 +76,7 @@ function App() {
               <div style={{padding: "5%"}}>
                 <h1 style={{textAlign: "center"}}>Welcome!</h1>
                 <p>Thank you for visiting StarGator. These yield aggregators have been built to let us farm STG pools and lower our exposure risks.</p>
-                <p>Stargator offers 1% fees to the wallet that compounds the pools each time and collects a 3% fee on top of that. From that 3% fee 50% of it (1.5%) is held in a vault that will be used at the discretion of early StarGator stakers. the other 1.5% goes to paying our patrons (the people behind <a style={{color: "white"}} href="https://umami.finance">Umami</a> & <a style={{color: "white"}} href="https://arbis.finance">Arbis Finance</a>)</p>
+                <p>Stargator offers 1% fees to the wallet that compounds the pools each time and collects a 3% fee on top of that. That goes to paying our patrons (the people behind <a style={{color: "white"}} href="https://umami.finance">Umami</a> & <a style={{color: "white"}} href="https://arbis.finance">Arbis Finance</a>)</p>
                 <p>We are very bullish on Stargate and look forward to staking that in STG pools once they open. Stargator is currently unaudited use at your own risk. Please feel free to read our smart contracts. The address is included on each page so you can go and DYOR</p>
               </div>
             </Route>
